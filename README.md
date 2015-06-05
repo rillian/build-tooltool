@@ -21,20 +21,19 @@ overwrite by default.  In this case, tooltool will exit with a non-0 exit value.
 If overwrite mode is enabled, tooltool will overwrite the local file with the
 file specified in the manifest.
 
-## Structure
+## Server
 
-This repository contains both the tooltool client -- `tooltool.py` -- and the
-tooltool server component, which is a
-[RelengAPI](https://github.com/mozilla/build-relengapi) blueprint.
+This repository contains only the tooltool client -- `tooltool.py`.
+The tooltool server component is a part of [RelengAPI](https://github.com/mozilla/build-relengapi).
 
 If you want to use the client, just copy out `tooltool.py` -- it has no
 dependencies.
 
 ## Development
 
-Hack on tooltool as you would any RelengAPI blueprint.  That means, roughly,
-creating a virtualenv and running `pip install -e .[test]` to install the
-blueprint and all of its dependences, including those for running tests.
+To hack on the tooltool client, install into a virtualenv with
+
+    pip install -e .[test]
 
 Send pull requests through GitHub.
 

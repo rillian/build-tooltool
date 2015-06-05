@@ -10,22 +10,13 @@ matrix:
       env: PY27=true
 
 
-# install dependencies.  The blueprint won't even install on Py26, so don't try
-install: |
-    if $PY27; then
-        pip install -e .[test]
-        pip install coveralls
-    else
-        pip install mock nose
-    fi && pip freeze
+install:
+  - pip install -e .[test]
+  - pip install coveralls
+  - pip freeze
 
-# run everything in a single script, so we get a nice summary at the end
 script: |
-    if $PY27; then
-        bash ./validate.sh
-    else
-        nosetests test_tooltool.py
-    fi
+    bash ./validate.sh
 
 after_success:
   # only get coverage on python-2.7

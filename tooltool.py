@@ -499,6 +499,12 @@ def fetch_file(base_urls, file_record, grabchunk=1024 * 4, auth_file=None, regio
         return None
 
 
+def clean_path(dirname):
+    """Remove a subtree if is exists. Helper for untar_file()."""
+    if os.path.exists(dirname):
+        log.info('rm tree: %s' % dirname)
+        shutil.rmtree(base_file)
+
 def untar_file(filename):
     """Untar `filename`, assuming it is uncompressed or compressed with bzip2,
     xz, or gzip.  The tarball is assumed to contain a single directory with
@@ -507,10 +513,7 @@ def untar_file(filename):
     if tarfile.is_tarfile(filename):
         tar_file, zip_ext = os.path.splitext(filename)
         base_file, tar_ext = os.path.splitext(tar_file)
-
-        if os.path.exists(base_file):
-            log.info('rm tree: %s' % base_file)
-            shutil.rmtree(base_file)
+        clean_path(base_file)
         log.info('untarring "%s"' % filename)
         tar = tarfile.open(filename)
         tar.extractall()
@@ -518,9 +521,7 @@ def untar_file(filename):
     elif filename.endswith('.tar.xz'):
         log.info('untarring "%s"' % filename)
         base_file = filename.replace('.tar.xz', '')
-        if os.path.exists(base_file):
-            log.info('rm tree: %s' % base_file)
-            shutil.rmtree(base_file)
+        clean_path(base_file)
         if not execute('tar -Jxf %s 2>&1' % filename):
             return False
     else:

@@ -36,6 +36,7 @@ import threading
 import time
 import urllib2
 import urlparse
+import zipfile
 
 from subprocess import PIPE
 from subprocess import Popen
@@ -503,13 +504,14 @@ def clean_path(dirname):
     """Remove a subtree if is exists. Helper for untar_file()."""
     if os.path.exists(dirname):
         log.info('rm tree: %s' % dirname)
-        shutil.rmtree(base_file)
+        shutil.rmtree(dirname)
+
 
 def untar_file(filename):
     """Untar `filename`, assuming it is uncompressed or compressed with bzip2,
-    xz, or gzip.  The tarball is assumed to contain a single directory with
-    a name matching the base of the given filename.  Xz support is handled by
-    shelling out to 'tar'."""
+    xz, gzip, or unzip a zip file. The file is assumed to contain a single
+    directory with a name matching the base of the given filename.
+    Xz support is handled by shelling out to 'tar'."""
     if tarfile.is_tarfile(filename):
         tar_file, zip_ext = os.path.splitext(filename)
         base_file, tar_ext = os.path.splitext(tar_file)
@@ -524,6 +526,13 @@ def untar_file(filename):
         clean_path(base_file)
         if not execute('tar -Jxf %s 2>&1' % filename):
             return False
+    elif zipfile.is_zipfile(filename):
+        log.info('unzipping "%s"' % filename)
+        base_file = filename.replace('.zip', '')
+        clean_path(base_file)
+        tar = zipfile.ZipFile(filename)
+        tar.extractall()
+        tar.close()
     else:
         log.error("Unknown zip extension for filename '%s'" % filename)
         return False

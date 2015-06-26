@@ -501,13 +501,13 @@ def fetch_file(base_urls, file_record, grabchunk=1024 * 4, auth_file=None, regio
 
 
 def clean_path(dirname):
-    """Remove a subtree if is exists. Helper for untar_file()."""
+    """Remove a subtree if is exists. Helper for unpack_file()."""
     if os.path.exists(dirname):
         log.info('rm tree: %s' % dirname)
         shutil.rmtree(dirname)
 
 
-def untar_file(filename):
+def unpack_file(filename):
     """Untar `filename`, assuming it is uncompressed or compressed with bzip2,
     xz, gzip, or unzip a zip file. The file is assumed to contain a single
     directory with a name matching the base of the given filename.
@@ -530,11 +530,11 @@ def untar_file(filename):
         log.info('unzipping "%s"' % filename)
         base_file = filename.replace('.zip', '')
         clean_path(base_file)
-        tar = zipfile.ZipFile(filename)
-        tar.extractall()
-        tar.close()
+        z = zipfile.ZipFile(filename)
+        z.extractall()
+        z.close()
     else:
-        log.error("Unknown zip extension for filename '%s'" % filename)
+        log.error("Unknown archive extension for filename '%s'" % filename)
         return False
     return True
 
@@ -664,7 +664,7 @@ def fetch_files(manifest_file, base_urls, filenames=[], cache_folder=None,
 
     # Unpack files that need to be unpacked.
     for filename in unpack_files:
-        if not untar_file(filename):
+        if not unpack_file(filename):
             failed_files.append(filename)
 
     # If we failed to fetch or validate a file, we need to fail

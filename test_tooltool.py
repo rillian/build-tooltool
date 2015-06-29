@@ -1151,17 +1151,17 @@ class FetchTests(TestDirMixin, unittest.TestCase):
         self.assert_cached_files('five')
 
     def test_unpack(self):
-        """When asked to unpack files, fetch calls untar_file."""
+        """When asked to unpack files, fetch calls unpack_file."""
         self.add_file_to_dir('four')
         self.add_file_to_cache('five')
         self.make_manifest('manifest.tt', 'three', 'four', 'five', unpack=True)
         with mock.patch('tooltool.fetch_file') as fetch_file:
             fetch_file.side_effect = self.fake_fetch_file
-            with mock.patch('tooltool.untar_file') as untar_file:
+            with mock.patch('tooltool.unpack_file') as unpack_file:
                 eq_(tooltool.fetch_files('manifest.tt', self.urls,
                                          cache_folder='cache'),
                     True)
-                untar_file.assert_has_calls([
+                unpack_file.assert_has_calls([
                     mock.call('file-three'),
                     mock.call('file-four'),
                     mock.call('file-five'),
@@ -1174,51 +1174,59 @@ class FetchTests(TestDirMixin, unittest.TestCase):
         self.make_manifest('manifest.tt', 'one', unpack=True)
         with mock.patch('tooltool.fetch_file') as fetch_file:
             fetch_file.side_effect = self.fake_fetch_file
-            with mock.patch('tooltool.untar_file') as untar_file:
-                untar_file.side_effect = lambda f: False
+            with mock.patch('tooltool.unpack_file') as unpack_file:
+                unpack_file.side_effect = lambda f: False
                 eq_(tooltool.fetch_files('manifest.tt', self.urls,
                                          cache_folder='cache'),
                     False)
-                untar_file.assert_called_with('file-one')
+                unpack_file.assert_called_with('file-one')
         self.assert_files('one')
 
-    def try_untar_file(self, filename):
+    def try_unpack_file(self, filename):
         os.mkdir('basename')
         open("basename/LEFTOVER.txt", "w").write("rm me")
-        self.failUnless(tooltool.untar_file(filename))
+        self.failUnless(tooltool.unpack_file(filename))
         self.failUnless(os.path.exists('basename'))
         self.failUnless(os.path.exists('basename/README.txt'))
         self.failIf(os.path.exists('basename/LEFTOVER.txt'))
 
-    def setup_tarball(self, tar_cmd):
+    def setup_archive(self, cmd):
         os.mkdir('basename')
         open("basename/README.txt", "w").write("in tarball")
-        os.system(tar_cmd)
+        os.system(cmd)
         shutil.rmtree('basename')
 
-    def test_untar_file_uncompressed(self):
-        self.setup_tarball('tar -cf basename.tar basename')
-        self.try_untar_file('basename.tar')
+    def test_unpack_file_tar(self):
+        self.setup_archive('tar -cf basename.tar basename')
+        self.try_unpack_file('basename.tar')
 
-    def test_untar_file_gz(self):
-        self.setup_tarball('tar -czf basename.tar.gz basename')
-        self.try_untar_file('basename.tar.gz')
+    def test_unpack_file_tar_gz(self):
+        self.setup_archive('tar -czf basename.tar.gz basename')
+        self.try_unpack_file('basename.tar.gz')
 
-    def test_untar_file_xz(self):
-        self.setup_tarball('tar -cJf basename.tar.xz basename')
-        self.try_untar_file('basename.tar.xz')
+    def test_unpack_file_tar_xz(self):
+        self.setup_archive('tar -cJf basename.tar.xz basename')
+        self.try_unpack_file('basename.tar.xz')
 
-    def test_untar_file_bz2(self):
-        self.setup_tarball('tar -cjf basename.tar.bz2 basename')
-        self.try_untar_file('basename.tar.bz2')
+    def test_unpack_file_tar_bz2(self):
+        self.setup_archive('tar -cjf basename.tar.bz2 basename')
+        self.try_unpack_file('basename.tar.bz2')
 
-    def test_untar_file_invalid_xz(self):
-        self.setup_tarball('echo BOGUS > basename.tar.xz')
-        self.assertFalse(tooltool.untar_file('basename.tar.xz'))
+    def test_unpack_file_zip(self):
+        self.setup_archive('zip -qr basename.zip basename')
+        self.try_unpack_file('basename.zip')
 
-    def test_untar_file_not_tarfile(self):
+    def test_unpack_file_invalid_xz(self):
+        self.setup_archive('echo BOGUS > basename.tar.xz')
+        self.assertFalse(tooltool.unpack_file('basename.tar.xz'))
+
+    def test_unpack_file_invalid_zip(self):
+        self.setup_archive('echo BOGUS > basename.zip')
+        self.assertFalse(tooltool.unpack_file('basename.zip'))
+
+    def test_unpack_file_not_tarfile(self):
         open('basename.tar.shrink', 'w').write('not a tarfile')
-        self.assertFalse(tooltool.untar_file('basename.tar.shrink'))
+        self.assertFalse(tooltool.unpack_file('basename.tar.shrink'))
 
 
 class FetchFileTests(BaseFileRecordTest, TestDirMixin):

@@ -521,15 +521,15 @@ def unpack_file(filename):
         tar.extractall()
         tar.close()
     elif filename.endswith('.tar.xz'):
-        log.info('untarring "%s"' % filename)
         base_file = filename.replace('.tar.xz', '')
         clean_path(base_file)
+        log.info('untarring "%s"' % filename)
         if not execute('tar -Jxf %s 2>&1' % filename):
             return False
     elif zipfile.is_zipfile(filename):
-        log.info('unzipping "%s"' % filename)
         base_file = filename.replace('.zip', '')
         clean_path(base_file)
+        log.info('unzipping "%s"' % filename)
         z = zipfile.ZipFile(filename)
         z.extractall()
         z.close()

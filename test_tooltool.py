@@ -308,6 +308,16 @@ class TestFileRecordJSONCodecs(BaseFileRecordListTest):
         for i in ['filename', 'size', 'algorithm', 'digest', 'unpack']:
             self.assertEqual(getattr(from_json, i), getattr(self.test_record, i), i)
 
+    def test_json_dumps_with_unpack_and_setup(self):
+        self.test_record.unpack = True
+        self.test_record.setup = 'setup.sh'
+        json_string = json.dumps(
+            self.test_record, cls=tooltool.FileRecordJSONEncoder)
+        from_json = json.loads(json_string,
+                               cls=tooltool.FileRecordJSONDecoder)
+        for i in ['filename', 'size', 'algorithm', 'digest', 'unpack', 'setup']:
+            self.assertEqual(getattr(from_json, i), getattr(self.test_record, i), i)
+
     def test_decode_list(self):
         json_string = json.dumps(
             self.record_list, cls=tooltool.FileRecordJSONEncoder)
@@ -984,6 +994,7 @@ class FetchTests(TestDirMixin, unittest.TestCase):
 
     def make_manifest(self, filename, *files, **kwargs):
         unpack = kwargs.pop('unpack', False)
+        setup = kwargs.pop('setup', None)
         manifest = []
         for file in files:
             manifest.append({
@@ -992,6 +1003,7 @@ class FetchTests(TestDirMixin, unittest.TestCase):
                 'algorithm': 'sha512',
                 'digest': hashlib.sha512(file).hexdigest(),
                 'unpack': unpack,
+                'setup': setup,
             })
         json.dump(manifest, open(filename, "w"))
 
@@ -1162,9 +1174,9 @@ class FetchTests(TestDirMixin, unittest.TestCase):
                                          cache_folder='cache'),
                     True)
                 unpack_file.assert_has_calls([
-                    mock.call('file-three'),
-                    mock.call('file-four'),
-                    mock.call('file-five'),
+                    mock.call('file-three', None),
+                    mock.call('file-four', None),
+                    mock.call('file-five', None),
                 ], any_order=True)
         self.assert_files('three', 'four', 'five')
         self.assert_cached_files('three', 'five')
@@ -1175,12 +1187,37 @@ class FetchTests(TestDirMixin, unittest.TestCase):
         with mock.patch('tooltool.fetch_file') as fetch_file:
             fetch_file.side_effect = self.fake_fetch_file
             with mock.patch('tooltool.unpack_file') as unpack_file:
-                unpack_file.side_effect = lambda f: False
+                unpack_file.side_effect = lambda f, s: False
                 eq_(tooltool.fetch_files('manifest.tt', self.urls,
                                          cache_folder='cache'),
                     False)
-                unpack_file.assert_called_with('file-one')
+                unpack_file.assert_called_with('file-one', None)
         self.assert_files('one')
+
+    def test_unpack_setup(self):
+        """When asked for a setup, fetch calls unpack_file with the setup file
+        name."""
+        self.make_manifest('manifest.tt', 'one', unpack=True, setup='setup.sh')
+        with mock.patch('tooltool.fetch_file') as fetch_file:
+            fetch_file.side_effect = self.fake_fetch_file
+            with mock.patch('tooltool.unpack_file') as unpack_file:
+                eq_(tooltool.fetch_files('manifest.tt', self.urls,
+                                         cache_folder='cache'),
+                    True)
+                unpack_file.assert_has_calls([
+                    mock.call('file-one', 'setup.sh'),
+                ])
+        self.assert_files('one')
+
+    def test_no_unpack_setup(self):
+        """When asked for a setup, unpack must also be set."""
+        self.make_manifest('manifest.tt', 'one', setup='setup.sh')
+        with mock.patch('tooltool.fetch_file') as fetch_file:
+            fetch_file.side_effect = self.fake_fetch_file
+            with mock.patch('tooltool.unpack_file') as unpack_file:
+                self.assertFalse(tooltool.fetch_files('manifest.tt', self.urls,
+                                                      cache_folder='cache'))
+                unpack_file.assert_has_calls([])
 
     def try_unpack_file(self, filename):
         os.mkdir('basename')
@@ -1228,6 +1265,23 @@ class FetchTests(TestDirMixin, unittest.TestCase):
         open('basename.tar.shrink', 'w').write('not a tarfile')
         self.assertFalse(tooltool.unpack_file('basename.tar.shrink'))
 
+    def test_unpack_file_setup(self):
+        self.setup_archive('tar -cf basename.tar basename')
+        with mock.patch('tooltool.execute') as execute:
+            execute.return_value = True
+            self.assertTrue(tooltool.unpack_file('basename.tar', 'setup.sh'))
+            execute.assert_has_calls([
+                mock.call(os.path.join('basename', 'setup.sh'))
+            ])
+
+    def test_unpack_file_setup_failed(self):
+        self.setup_archive('tar -cf basename.tar basename')
+        with mock.patch('tooltool.execute') as execute:
+            execute.return_value = False
+            self.assertFalse(tooltool.unpack_file('basename.tar', 'setup.sh'))
+            execute.assert_has_calls([
+                mock.call(os.path.join('basename', 'setup.sh'))
+            ])
 
 class FetchFileTests(BaseFileRecordTest, TestDirMixin):
 

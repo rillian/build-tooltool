@@ -1478,6 +1478,15 @@ class AddFiles(BaseManifestTest):
         assert tooltool.add_files('manifest.tt', 'sha512', [file_json['filename']], 'public')
         self.assert_manifest([self.test_record_json, file_json])
 
+    def test_append_unpack(self):
+        """Adding a new file to an existing manifest results in a manifest with
+        two files, with the visibility and unpack attributes set"""
+        file_json = self.make_file()
+        file_json['visibility'] = 'public'
+        file_json['unpack'] = true
+        assert tooltool.add_files('manifest.tt', 'sha512', file_json['filename'], 'public', true)
+        self.assert_manifest([self.test_record_json, file_json])
+
     def test_new_manifest(self):
         """Adding a new file to a new manifest results in a manifest with one
         file"""

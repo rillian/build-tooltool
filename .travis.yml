@@ -1,13 +1,14 @@
 language: python
 
-# align the env's and the python's; below "$PY27 ||" will not be run on py26,
-# and "$PY27 &&" will only be run on py26.
+
+# Align the matrix with the corresponding TOXENV settings
+# to configure the correct variant for each tox invocation.
 matrix:
   include:
     - python: "2.6"
-      env: PY27=false
+      env: TOXENV=py26
     - python: "2.7"
-      env: PY27=true
+      env: TOXENV=py27
 
 
 install:
@@ -17,8 +18,8 @@ install:
   - pip freeze
 
 script:
-  if $PY27; then tox -e py27; else tox -e py26; fi
+  tox
 
 after_success:
   # only get coverage on python-2.7
-  - $PY27 && coveralls --rcfile coveragerc
+  - test $TOXENV = py27 && coveralls --rcfile coveragerc

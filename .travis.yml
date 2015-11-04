@@ -13,10 +13,11 @@ matrix:
 install:
   - pip install -e .[test]
   - pip install coveralls
+  - pip install tox
   - pip freeze
 
-script: |
-    bash ./validate.sh
+script:
+  if $PY27; then tox -e py27; else tox -e py26; fi
 
 after_success:
   # only get coverage on python-2.7

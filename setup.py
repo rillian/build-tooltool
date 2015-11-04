@@ -11,7 +11,7 @@ data_patterns = [
     'static/**.txt',
 ]
 
-setup(name='relengapi-tooltool',
+setup(name='tooltool',
       version='1.0.0',
       description='Secure, cache-friendly access to large binary blobs for builds and tests',
       author='John Ford',

@@ -9,7 +9,7 @@
 COVERAGE_MIN=100
 
 # project name
-PROJECT=relengapi-tooltool
+PROJECT=tooltool
 
 # unset RELENGAPI_SETTINGS, if it's set
 RELENGAPI_SETTINGS=
@@ -65,7 +65,7 @@ show_results() {
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
-[ -z "$VIRTUAL_ENV" ] && fail "Need an activated virtualenv with relengapi installed"
+[ -z "$VIRTUAL_ENV" ] && fail "Need an activated virtualenv with tooltool[test] installed"
 
 tmpbase=$(mktemp -d -t tmpbase.XXXXXX)
 trap 'rm -rf ${tmpbase}; exit 1' 1 2 3 15

@@ -306,7 +306,8 @@ class Manifest(object):
         assert fmt in self.valid_formats
         if fmt == 'json':
             rv = json.dump(
-                self.file_records, output_file, indent=0, cls=FileRecordJSONEncoder)
+                self.file_records, output_file, indent=0, cls=FileRecordJSONEncoder,
+                separators=(',', ': '))
             print >> output_file, ''
             return rv
 

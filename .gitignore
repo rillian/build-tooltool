@@ -16,3 +16,4 @@ dist/
 *.pkg
 *.mpkg
 testdir
+.tox

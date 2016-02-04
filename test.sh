@@ -99,6 +99,8 @@ assert_zero $? "manifest file created"
 ###############
 $tt add a
 # TODO assert_nonzero $? "adding the same file a second time"
+egrep ' +$' manifest.tt
+assert_nonzero $? "lines must not end with spaces"
 ###############
 $tt add notafile
 #TODO this will always pass until the program is fixed

@@ -398,7 +398,7 @@ def validate_manifest(manifest_file):
         return False
 
 
-def add_files(manifest_file, algorithm, filenames, visibility):
+def add_files(manifest_file, algorithm, filenames, visibility, unpack):
     # returns True if all files successfully added, False if not
     # and doesn't catch library Exceptions.  If any files are already
     # tracked in the manifest, return will be False because they weren't
@@ -416,6 +416,7 @@ def add_files(manifest_file, algorithm, filenames, visibility):
         path, name = os.path.split(filename)
         new_fr = create_file_record(filename, algorithm)
         new_fr.visibility = visibility
+        new_fr.unpack = unpack
         log.debug("appending a new file record to manifest file")
         add = True
         for fr in old_manifest.file_records:
@@ -907,7 +908,7 @@ def process_command(options, args):
         return validate_manifest(options['manifest'])
     elif cmd == 'add':
         return add_files(options['manifest'], options['algorithm'], cmd_args,
-                         options['visibility'])
+                         options['visibility'], options['unpack'])
     elif cmd == 'purge':
         if options['cache_folder']:
             purge(folder=options['cache_folder'], gigs=options['size'])
@@ -956,6 +957,10 @@ def main(argv, _skip_logging=False):
                            'files that cannot be distributed out of the company '
                            'but not for secrets; "public" files are available to '
                            'anyone withou trestriction')
+    parser.add_option('--unpack', default=False,
+                      dest='unpack', action='store_true',
+                      help='Request unpacking this file after fetch.'
+                           ' This is helpful with tarballs.')
     parser.add_option('-o', '--overwrite', default=False,
                       dest='overwrite', action='store_true',
                       help='UNUSED; present for backward compatibility')

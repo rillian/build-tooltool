@@ -497,20 +497,40 @@ def test_command_validate():
 def test_command_add():
     with mock.patch('tooltool.add_files') as add_files:
         eq_(call_main('tooltool', 'add', 'a', 'b'), 0)
-        add_files.assert_called_with('manifest.tt', 'sha512', ['a', 'b'], None)
+        add_files.assert_called_with('manifest.tt', 'sha512', ['a', 'b'],
+            None, False)
 
+def test_command_add_unpack():
+    with mock.patch('tooltool.add_files') as add_files:
+        eq_(call_main('tooltool', 'add', '--unpack', 'a', 'b'), 0)
+        add_files.assert_called_with('manifest.tt', 'sha512', ['a', 'b'],
+            None, True)
 
 def test_command_add_visibility_internal():
     with mock.patch('tooltool.add_files') as add_files:
         eq_(call_main('tooltool', 'add', '--visibility', 'internal', 'a', 'b'), 0)
-        add_files.assert_called_with('manifest.tt', 'sha512', ['a', 'b'], 'internal')
+        add_files.assert_called_with('manifest.tt', 'sha512', ['a', 'b'],
+            'internal', False)
 
+def test_command_add_visibility_internal_unpack():
+    with mock.patch('tooltool.add_files') as add_files:
+        eq_(call_main('tooltool', 'add', '--visibility', 'internal',
+          '--unpack', 'a', 'b'), 0)
+        add_files.assert_called_with('manifest.tt', 'sha512', ['a', 'b'],
+            'internal', True)
 
 def test_command_add_visibility_public():
     with mock.patch('tooltool.add_files') as add_files:
         eq_(call_main('tooltool', 'add', '--visibility', 'public', 'a', 'b'), 0)
-        add_files.assert_called_with('manifest.tt', 'sha512', ['a', 'b'], 'public')
+        add_files.assert_called_with('manifest.tt', 'sha512', ['a', 'b'],
+            'public', False)
 
+def test_command_add_visibility_public_unpack():
+    with mock.patch('tooltool.add_files') as add_files:
+        eq_(call_main('tooltool', 'add', '--visibility', 'public',
+          '--unpack','a', 'b'), 0)
+        add_files.assert_called_with('manifest.tt', 'sha512', ['a', 'b'],
+            'public', True)
 
 def test_command_purge_no_folder():
     with mock.patch('tooltool.purge') as purge:
@@ -721,11 +741,12 @@ class UploadTests(TestDirMixin, unittest.TestCase):
         self.tearDownTestDir()
 
     def add_file(self, filename, on_server=False, upload_fails=False,
-                 visibility='internal'):
+                 visibility='internal', unpack=False):
         data = os.urandom(1024)
         open(filename, "w").write(data)
         digest = hashlib.sha512(data).hexdigest()
-        tooltool.add_files('manifest.tt', 'sha512', [filename], visibility)
+        tooltool.add_files('manifest.tt', 'sha512', [filename],
+            visibility, unpack)
         if on_server:
             self.server_config.setdefault('files_on_server', []).append(filename)
         if upload_fails:
@@ -1459,7 +1480,8 @@ class AddFiles(BaseManifestTest):
         """Adding a new file to an existing manifest results in a manifest with
         two files"""
         file_json = self.make_file()
-        assert tooltool.add_files('manifest.tt', 'sha512', [file_json['filename']], None)
+        assert tooltool.add_files('manifest.tt', 'sha512',
+            [file_json['filename']], None, False)
         self.assert_manifest([self.test_record_json, file_json])
 
     def test_append_internal(self):
@@ -1467,7 +1489,8 @@ class AddFiles(BaseManifestTest):
         two files, with the visibility set on the new one"""
         file_json = self.make_file()
         file_json['visibility'] = 'internal'
-        assert tooltool.add_files('manifest.tt', 'sha512', [file_json['filename']], 'internal')
+        assert tooltool.add_files('manifest.tt', 'sha512',
+            [file_json['filename']], 'internal', False)
         self.assert_manifest([self.test_record_json, file_json])
 
     def test_append_public(self):
@@ -1475,21 +1498,34 @@ class AddFiles(BaseManifestTest):
         two files, with the visibility set on the new one"""
         file_json = self.make_file()
         file_json['visibility'] = 'public'
-        assert tooltool.add_files('manifest.tt', 'sha512', [file_json['filename']], 'public')
+        assert tooltool.add_files('manifest.tt', 'sha512',
+            [file_json['filename']], 'public', False)
+        self.assert_manifest([self.test_record_json, file_json])
+
+    def test_append_unpack(self):
+        """Adding a new file to an existing manifest results in a manifest with
+        two files, with the visibility and unpack attributes set"""
+        file_json = self.make_file()
+        file_json['visibility'] = 'public'
+        file_json['unpack'] = True
+        assert tooltool.add_files('manifest.tt', 'sha512',
+            [file_json['filename']], 'public', True)
         self.assert_manifest([self.test_record_json, file_json])
 
     def test_new_manifest(self):
         """Adding a new file to a new manifest results in a manifest with one
         file"""
         file_json = self.make_file()
-        assert tooltool.add_files('new_manifest.tt', 'sha512', [file_json['filename']], None)
+        assert tooltool.add_files('new_manifest.tt', 'sha512',
+            [file_json['filename']], None, False)
         self.assert_manifest([file_json], manifest='new_manifest.tt')
 
     def test_file_already_exists(self):
         """Adding a file to a manifest that is already in that manifest fails"""
         assert not tooltool.add_files('manifest.tt', 'sha512',
                                       [os.path.join(os.path.dirname(__file__),
-                                                    self.sample_file)], None)
+                                                    self.sample_file)],
+                                      None, False)
         self.assert_manifest([self.test_record_json])
 
     def test_filename_already_exists(self):
@@ -1497,7 +1533,7 @@ class AddFiles(BaseManifestTest):
         file fails"""
         self.make_file(self.sample_file)
         assert not tooltool.add_files('manifest.tt', 'sha512',
-                                      [self.sample_file], None)
+                                      [self.sample_file], None, False)
         self.assert_manifest([self.test_record_json])
 
 
@@ -1526,7 +1562,8 @@ class ListManifest(BaseManifestTest):
         # add two files
         open("foo.txt", "w").write("FOO!")
         open("bar.txt", "w").write("BAR!")
-        tooltool.add_files('manifest.tt', 'sha512', ['foo.txt', 'bar.txt'], None)
+        tooltool.add_files('manifest.tt', 'sha512',
+            ['foo.txt', 'bar.txt'], None, False)
         open("bar.txt", "w").write("bar is invalid")
         old_stdout = sys.stdout
         sys.stdout = cStringIO.StringIO()

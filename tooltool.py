@@ -956,7 +956,7 @@ def main(argv, _skip_logging=False):
                       help='Visibility level of this file; "internal" is for '
                            'files that cannot be distributed out of the company '
                            'but not for secrets; "public" files are available to '
-                           'anyone withou trestriction')
+                           'anyone without restriction')
     parser.add_option('--unpack', default=False,
                       dest='unpack', action='store_true',
                       help='Request unpacking this file after fetch.'
